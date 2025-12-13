@@ -1,2 +1,29 @@
-# JourNetClient
-Client side for the JourNet app
+# JourNet
+This is the client side of the JourNet app. For the server side please check [here](https://github.com/irsotarriva/JourNet)
+
+## Overview
+JourNet is a service to host discussions, discover new papers, and interact with the scientific comunity. The project aims to bring paper discussion and  discovery to the modern day using social media like features like recomendations feed, up-down votes, discussion threads, etc.
+
+## Installation
+1. Clone the repository git clone https://github.com/irsotarriva/JourNetClient.git
+
+## Usage
+
+## Licence
+This project is licensed under GNU GENERAL PUBLIC LICENSE. See the [License](https://github.com/irsotarriva/ScientificReview/LICENSE)
+
+##Authors and Acknowledgment
+- Lecona Andre
+- Sameer Deshmukh
+- Sotarriva Isai
+- Wen Jianwei
+
+## Contact
+
+
+## References
+[ArXiV](https://arxiv.org)
+[ArXiv Kaggle databse](https://www.kaggle.com/datasets/Cornell-University/arxiv)
+[OpenAI API pip page](https://pypi.org/project/openai/)
+[Mongo DB](https://www.mongodb.com/docs/)
+[Orcid Oauth API](https://info.orcid.org/documentation/api-tutorials/api-tutorial-get-and-authenticated-orcid-id/)
