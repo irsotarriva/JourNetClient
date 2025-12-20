@@ -440,7 +440,8 @@ function GraphCanvas() {
             ctx.shadowBlur = 0;
 
             // Loading pulse for expanding node
-            if (expandingNodeId === n.id) {
+            // Loading pulse for expanding node
+            if (expandingNodeId === n.id || (n.isUser && isLoadingRecommendations)) {
                 const time = Date.now() / 200;
                 const radius = n.radius + 6 + Math.sin(time) * 3;
                 ctx.beginPath();
@@ -471,7 +472,9 @@ function GraphCanvas() {
         if (isPanning && panStartRef.current) {
             const dx = mx - panStartRef.current.mx;
             const dy = my - panStartRef.current.my;
-            setCamera(prev => ({ ...prev, tx: panStartRef.current!.tx + dx, ty: panStartRef.current!.ty + dy }));
+            if (panStartRef.current) {
+                setCamera(prev => ({ ...prev, tx: panStartRef.current!.tx + dx, ty: panStartRef.current!.ty + dy }));
+            }
             setHoverNodeId(null);
             return;
         }

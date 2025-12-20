@@ -21,6 +21,11 @@
       "static/chunks/main-app.js",
       "static/chunks/app/login/page.js"
     ],
+    "/explore/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/explore/page.js"
+    ],
     "/user/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
