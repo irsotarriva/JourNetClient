@@ -1,20 +1,73 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
 import NetworkBackground from '@/components/NetworkBackground';
+import { fetchAPI } from '@/lib/api';
+
+type TabType = 'discussions' | 'reading' | 'personal';
+
+interface DiscussionThread {
+    article_id: number;
+    paper_title: string;
+    paper_abstract: string;
+    root_comment_id: number;
+    root_comment: {
+        id: number;
+        comment: string;
+        userId: string;
+        created_at: string;
+        upVotes: number;
+        downVotes: number;
+    };
+    user_comment_id: number;
+    last_activity: string;
+}
+
+interface Comment {
+    id: number;
+    parent: number | null;
+    userId: string;
+    comment: string;
+    created_at: string;
+    upVotes: number;
+    downVotes: number;
+    isAnonymous: boolean;
+}
 
 export default function UserPage() {
     const { user, isLoading } = useAuth();
     const router = useRouter();
+    const [activeTab, setActiveTab] = useState<TabType>('discussions');
+    const [threads, setThreads] = useState<DiscussionThread[]>([]);
+    const [loadingThreads, setLoadingThreads] = useState(false);
 
     useEffect(() => {
         if (!isLoading && !user) {
             router.push('/');
         }
     }, [user, isLoading, router]);
+
+    useEffect(() => {
+        if (user && activeTab === 'discussions') {
+            loadDiscussionThreads();
+        }
+    }, [user, activeTab]);
+
+    const loadDiscussionThreads = async () => {
+        setLoadingThreads(true);
+        try {
+            const response = await fetchAPI('/comments/user/threads');
+            setThreads(response.threads || []);
+        } catch (error) {
+            console.error('Failed to load discussion threads:', error);
+            setThreads([]);
+        } finally {
+            setLoadingThreads(false);
+        }
+    };
 
     if (isLoading || !user) {
         return (
@@ -70,14 +123,251 @@ export default function UserPage() {
 
                 {/* Main Content */}
                 <div className="container mx-auto px-6 py-12">
-                    <div className="max-w-4xl mx-auto">
-                        <div className="bg-white/40 backdrop-blur-md rounded-2xl p-12 text-center border border-white/30 shadow-xl">
-                            <h2 className="text-4xl font-bold text-gray-800 mb-4">User Profile</h2>
-                            <p className="text-xl text-gray-600">Coming soon...</p>
+                    <div className="max-w-6xl mx-auto">
+                        {/* Page Title */}
+                        <h2 className="text-4xl font-bold text-gray-800 mb-8">My Profile</h2>
+
+                        {/* Tab Navigation */}
+                        <div className="bg-white/40 backdrop-blur-md rounded-2xl p-2 shadow-lg border border-white/30 mb-8 flex space-x-2">
+                            <button
+                                onClick={() => setActiveTab('discussions')}
+                                className={`flex-1 py-3 px-6 rounded-xl font-semibold text-lg transition-all duration-300 ${activeTab === 'discussions'
+                                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
+                                    : 'text-gray-700 hover:text-gray-900 hover:bg-white/50'
+                                    }`}
+                            >
+                                Discussions
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('reading')}
+                                className={`flex-1 py-3 px-6 rounded-xl font-semibold text-lg transition-all duration-300 ${activeTab === 'reading'
+                                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
+                                    : 'text-gray-700 hover:text-gray-900 hover:bg-white/50'
+                                    }`}
+                            >
+                                Reading Lists
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('personal')}
+                                className={`flex-1 py-3 px-6 rounded-xl font-semibold text-lg transition-all duration-300 ${activeTab === 'personal'
+                                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
+                                    : 'text-gray-700 hover:text-gray-900 hover:bg-white/50'
+                                    }`}
+                            >
+                                Personal Information
+                            </button>
+                        </div>
+
+                        {/* Tab Content */}
+                        <div className="bg-white/40 backdrop-blur-md rounded-2xl p-8 shadow-xl border border-white/30 min-h-[400px]">
+                            {activeTab === 'discussions' && (
+                                <DiscussionsTab threads={threads} loading={loadingThreads} />
+                            )}
+                            {activeTab === 'reading' && (
+                                <div className="text-center py-12">
+                                    <h3 className="text-2xl font-bold text-gray-800 mb-4">Reading Lists</h3>
+                                    <p className="text-lg text-gray-600">Coming soon...</p>
+                                </div>
+                            )}
+                            {activeTab === 'personal' && (
+                                <div className="text-center py-12">
+                                    <h3 className="text-2xl font-bold text-gray-800 mb-4">Personal Information</h3>
+                                    <p className="text-lg text-gray-600">Coming soon...</p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
+    );
+}
+
+function DiscussionsTab({ threads, loading }: { threads: DiscussionThread[]; loading: boolean }) {
+    const [expandedThreads, setExpandedThreads] = useState<Set<number>>(new Set());
+    const [threadComments, setThreadComments] = useState<Record<number, Comment[]>>({});
+    const [loadingComments, setLoadingComments] = useState<Set<number>>(new Set());
+
+    const toggleThread = async (rootCommentId: number) => {
+        const newExpanded = new Set(expandedThreads);
+
+        if (newExpanded.has(rootCommentId)) {
+            newExpanded.delete(rootCommentId);
+        } else {
+            newExpanded.add(rootCommentId);
+
+            // Load comments for this thread if not already loaded
+            if (!threadComments[rootCommentId]) {
+                await loadThreadComments(rootCommentId);
+            }
+        }
+
+        setExpandedThreads(newExpanded);
+    };
+
+    const loadThreadComments = async (rootCommentId: number) => {
+        setLoadingComments(prev => new Set(prev).add(rootCommentId));
+
+        try {
+            // Fetch all comments and build the thread
+            const allComments: Comment[] = [];
+            const toFetch = [rootCommentId];
+            const fetched = new Set<number>();
+
+            while (toFetch.length > 0) {
+                const commentId = toFetch.shift()!;
+                if (fetched.has(commentId)) continue;
+
+                try {
+                    const comment = await fetchAPI(`/comments/${commentId}`);
+                    allComments.push(comment);
+                    fetched.add(commentId);
+
+                    // Find replies to this comment
+                    // Note: This is a simplified approach. In production, you'd want a better way to fetch replies
+                } catch (error) {
+                    console.error(`Failed to fetch comment ${commentId}:`, error);
+                }
+            }
+
+            setThreadComments(prev => ({
+                ...prev,
+                [rootCommentId]: allComments
+            }));
+        } catch (error) {
+            console.error('Failed to load thread comments:', error);
+        } finally {
+            setLoadingComments(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(rootCommentId);
+                return newSet;
+            });
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="text-center py-12">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+                <p className="text-gray-600">Loading your discussions...</p>
+            </div>
+        );
+    }
+
+    if (threads.length === 0) {
+        return (
+            <div className="text-center py-12">
+                <svg className="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+                <h3 className="text-xl font-semibold text-gray-700 mb-2">No Discussions Yet</h3>
+                <p className="text-gray-600">You haven't participated in any discussions yet.</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-4">
+            <h3 className="text-2xl font-bold text-gray-800 mb-6">Your Discussions ({threads.length})</h3>
+
+            {threads.map((thread) => (
+                <div
+                    key={`${thread.article_id}_${thread.root_comment_id}`}
+                    className="bg-white/60 backdrop-blur-sm rounded-xl p-6 border border-white/40 shadow-md hover:shadow-lg transition-all duration-300"
+                >
+                    {/* Paper Title */}
+                    <Link href={`/paper/${thread.article_id}`}>
+                        <h4 className="text-xl font-bold text-blue-600 hover:text-blue-800 mb-3 cursor-pointer">
+                            {thread.paper_title}
+                        </h4>
+                    </Link>
+
+                    {/* Root Comment Preview */}
+                    <div className="bg-gray-50/50 rounded-lg p-4 mb-4">
+                        <div className="flex items-start justify-between mb-2">
+                            <span className="text-sm font-semibold text-gray-700">Thread Started:</span>
+                            <span className="text-sm text-gray-500">
+                                {new Date(thread.root_comment.created_at).toLocaleDateString()}
+                            </span>
+                        </div>
+                        <p className="text-gray-700 line-clamp-2">{thread.root_comment.comment}</p>
+                        <div className="flex items-center space-x-4 mt-3 text-sm text-gray-600">
+                            <span className="flex items-center space-x-1">
+                                <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z" />
+                                </svg>
+                                <span>{thread.root_comment.upVotes}</span>
+                            </span>
+                            <span className="flex items-center space-x-1">
+                                <svg className="w-4 h-4 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M18 9.5a1.5 1.5 0 11-3 0v-6a1.5 1.5 0 013 0v6zM14 9.667v-5.43a2 2 0 00-1.105-1.79l-.05-.025A4 4 0 0011.055 2H5.64a2 2 0 00-1.962 1.608l-1.2 6A2 2 0 004.44 12H8v4a2 2 0 002 2 1 1 0 001-1v-.667a4 4 0 01.8-2.4l1.4-1.866a4 4 0 00.8-2.4z" />
+                                </svg>
+                                <span>{thread.root_comment.downVotes}</span>
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Expand/Collapse Button */}
+                    <button
+                        onClick={() => toggleThread(thread.root_comment_id)}
+                        className="w-full py-2 px-4 bg-blue-100 hover:bg-blue-200 text-blue-700 font-semibold rounded-lg transition-colors flex items-center justify-center space-x-2"
+                    >
+                        {expandedThreads.has(thread.root_comment_id) ? (
+                            <>
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                                </svg>
+                                <span>Hide Thread</span>
+                            </>
+                        ) : (
+                            <>
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                                <span>View Full Thread</span>
+                            </>
+                        )}
+                    </button>
+
+                    {/* Expanded Thread */}
+                    {expandedThreads.has(thread.root_comment_id) && (
+                        <div className="mt-4 pl-6 border-l-4 border-blue-300">
+                            {loadingComments.has(thread.root_comment_id) ? (
+                                <div className="text-center py-4">
+                                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                                </div>
+                            ) : threadComments[thread.root_comment_id] ? (
+                                <div className="space-y-3">
+                                    {threadComments[thread.root_comment_id].map((comment) => (
+                                        <div key={comment.id} className="bg-white/80 rounded-lg p-4">
+                                            <p className="text-gray-700 mb-2">{comment.comment}</p>
+                                            <div className="flex items-center justify-between text-sm text-gray-500">
+                                                <span>{new Date(comment.created_at).toLocaleString()}</span>
+                                                <div className="flex items-center space-x-3">
+                                                    <span className="flex items-center space-x-1">
+                                                        <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                                            <path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z" />
+                                                        </svg>
+                                                        <span>{comment.upVotes}</span>
+                                                    </span>
+                                                    <span className="flex items-center space-x-1">
+                                                        <svg className="w-4 h-4 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                                                            <path d="M18 9.5a1.5 1.5 0 11-3 0v-6a1.5 1.5 0 013 0v6zM14 9.667v-5.43a2 2 0 00-1.105-1.79l-.05-.025A4 4 0 0011.055 2H5.64a2 2 0 00-1.962 1.608l-1.2 6A2 2 0 004.44 12H8v4a2 2 0 002 2 1 1 0 001-1v-.667a4 4 0 01.8-2.4l1.4-1.866a4 4 0 00.8-2.4z" />
+                                                        </svg>
+                                                        <span>{comment.downVotes}</span>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-gray-600 py-4">No additional comments in this thread.</p>
+                            )}
+                        </div>
+                    )}
+                </div>
+            ))}
         </div>
     );
 }
