@@ -17,8 +17,13 @@ import { db } from '@/lib/db';
 import { Article } from '@/lib/types';
 
 export default function ExplorePage() {
-    const { user, isLoading } = useAuth();
+    const { user, isLoading, logout } = useAuth();
     const router = useRouter();
+
+    const handleLogout = () => {
+        logout();
+        router.push('/');
+    };
 
     useEffect(() => {
         if (!isLoading && !user) {
@@ -73,6 +78,12 @@ export default function ExplorePage() {
                                 <span className="text-gray-700 font-medium">
                                     Welcome, <span className="text-blue-600">{user.username}</span>
                                 </span>
+                                <button
+                                    onClick={handleLogout}
+                                    className="px-4 py-2 text-sm font-semibold text-gray-700 hover:text-red-600 transition-colors"
+                                >
+                                    Logout
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -120,60 +131,26 @@ function GraphCanvas() {
 
     const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
 
-    // Seed with a few unconnected nodes from top-rated articles (fixed and well distributed)
+    // Seed with a single User Node
     useEffect(() => {
-        let isMounted = true;
-        const seed = async () => {
-            let initialArticles: Article[] = [];
-            // Try backend recommend endpoint first (returns Article[])
-            try {
-                const headers: Record<string, string> = {};
-                if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
-                const res = await fetch(`/recommend/`, { headers, credentials: 'include' });
-                if (res.ok) {
-                    const json = await res.json();
-                    if (Array.isArray(json) && json.length > 0) {
-                        initialArticles = json.slice(0, 6);
-                    }
-                }
-            } catch (err) {
-                console.warn('recommend fetch failed, falling back to local DB', err);
-            }
+        if (!canvasRef.current) return;
+        const rect = canvasRef.current.getBoundingClientRect();
+        const w = rect.width;
+        const h = rect.height;
+        const cx = w / 2;
+        const cy = h / 2;
 
-            // Fallback to local DB if backend didn't return data
-            if (initialArticles.length === 0) {
-                const top = await db.articles.getByRating(4.0);
-                initialArticles = top.slice(0, 6);
-            }
-
-            if (!canvasRef.current) return;
-            const rect = canvasRef.current.getBoundingClientRect();
-            const w = rect.width;
-            const h = rect.height;
-
-            // Distribute in a circle
-            const cx = w / 2;
-            const cy = h / 2;
-            const radius = Math.min(w, h) * 0.3;
-
-            const initial: GraphNode[] = initialArticles.map((a, i) => {
-                const angle = (i / initialArticles.length) * Math.PI * 2;
-                return {
-                    id: a.id,
-                    article: a,
-                    x: cx + Math.cos(angle) * radius,
-                    y: cy + Math.sin(angle) * radius,
-                    vx: 0,
-                    vy: 0,
-                    radius: 22,
-                    isFixed: true, // fixed seed nodes
-                };
-            });
-            if (isMounted) setNodes(initial);
-        };
-        seed();
-        return () => { isMounted = false; };
-    }, [user, authToken]);
+        setNodes([{
+            id: 'user-root',
+            x: cx,
+            y: cy,
+            vx: 0,
+            vy: 0,
+            radius: 30, // Slightly larger
+            isFixed: true,
+            isUser: true,
+        }]);
+    }, [dpr]);
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -359,6 +336,10 @@ function GraphCanvas() {
         ctx.translate(camera.tx, camera.ty);
         ctx.scale(camera.scale, camera.scale);
 
+        // Constants for style
+        const baseBlue = '#2563eb'; // blue-600
+        const basePurple = '#9333ea'; // purple-600
+
         // draw edges
         for (const e of edges) {
             const a = nodes.find(n => n.id === e.sourceId);
@@ -367,10 +348,18 @@ function GraphCanvas() {
             const dx = b.x - a.x;
             const dy = b.y - a.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
+
             ctx.beginPath();
             ctx.lineWidth = 1.5 / camera.scale;
-            const alpha = Math.max(0.15, Math.min(0.35, 1.0 - Math.abs(dist - 140) / 300));
-            ctx.strokeStyle = `rgba(59,130,246,${alpha})`;
+
+            // Gradient edge
+            const grad = ctx.createLinearGradient(a.x, a.y, b.x, b.y);
+            // Alpha fades based on length/stretch
+            const alpha = Math.max(0.1, Math.min(0.4, 1.0 - Math.abs(dist - 140) / 300));
+            grad.addColorStop(0, `rgba(37, 99, 235, ${alpha})`); // blue
+            grad.addColorStop(1, `rgba(147, 51, 234, ${alpha})`); // purple
+
+            ctx.strokeStyle = grad;
             ctx.moveTo(a.x, a.y);
             ctx.lineTo(b.x, b.y);
             ctx.stroke();
@@ -379,17 +368,73 @@ function GraphCanvas() {
         // draw nodes
         for (const n of nodes) {
             const isHover = hoverNodeId === n.id;
+            const isSelected = selectedNodeId === n.id;
+
             ctx.beginPath();
             ctx.arc(n.x, n.y, n.radius, 0, Math.PI * 2);
-            ctx.fillStyle = isHover ? 'rgba(59,130,246,0.85)' : 'rgba(59,130,246,0.65)';
+
+            // Node Gradient (Glassmorphismish)
+            const nodeGrad = ctx.createLinearGradient(n.x - n.radius, n.y - n.radius, n.x + n.radius, n.y + n.radius);
+
+            if (n.isUser) {
+                // Gold/Orange for User
+                nodeGrad.addColorStop(0, '#f59e0b'); // amber-500
+                nodeGrad.addColorStop(1, '#ea580c'); // orange-600
+            } else {
+                // Blue/Purple for papers
+                nodeGrad.addColorStop(0, '#3b82f6'); // blue-500
+                nodeGrad.addColorStop(1, '#8b5cf6'); // violet-500
+            }
+
+            ctx.fillStyle = nodeGrad;
+
+            // Shadow/Glow
+            if (isHover || isSelected) {
+                ctx.shadowColor = 'rgba(59, 130, 246, 0.5)';
+                ctx.shadowBlur = 15;
+            } else {
+                ctx.shadowColor = 'rgba(0,0,0,0.1)';
+                ctx.shadowBlur = 4;
+            }
+
             ctx.fill();
 
-            const short = getShortTitle(n.article.title);
-            ctx.font = `${12 / camera.scale}px system-ui, -apple-system, Segoe UI, Roboto`;
-            ctx.fillStyle = '#0f172a';
+            // Reset shadow
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+
+            // Border (White for glass effect)
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = (isSelected ? 3 : 1.5) / camera.scale;
+            ctx.stroke();
+
+            // Label
+            const label = n.isUser ? 'You' : (n.article ? getShortTitle(n.article.title) : '');
+
+            // Dynamic font size based on zoom, clamped
+            // Using system fonts that match the app's clean look
+            const fontSize = Math.max(10, (n.isUser ? 14 : 12) / camera.scale);
+            ctx.font = `${n.isUser ? '700' : '600'} ${fontSize}px ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial`;
+            ctx.fillStyle = n.isUser ? '#ffffff' : '#1e293b'; // White for user, slate for articles
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText(short, n.x, n.y - n.radius - 10);
+
+            // Text background (pill) for better readability? 
+            if (n.isUser) {
+                ctx.shadowColor = 'rgba(0,0,0,0.5)';
+                ctx.shadowBlur = 4;
+            } else {
+                ctx.shadowColor = 'white';
+                ctx.shadowBlur = 4;
+                ctx.lineWidth = 3;
+                ctx.strokeText(label, n.x, n.y - n.radius - (12 / camera.scale));
+            }
+
+            ctx.fillText(label, n.x, n.y - (n.isUser ? 0 : n.radius + (12 / camera.scale)));
+
+            // Reset styles
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
         }
 
         ctx.restore();
@@ -535,10 +580,58 @@ function GraphCanvas() {
         });
         if (!clicked) return;
 
-        // Update persistent preview to the clicked node
+        // User Node Interaction: Fetch Recommendations
+        if (clicked.isUser) {
+            if (clicked.visited) return; // Already fetched
+
+            // Mark visited
+            setNodes(prev => prev.map(n => n.id === clicked.id ? { ...n, visited: true } : n));
+
+            try {
+                const headers: Record<string, string> = {};
+                if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+                const res = await fetch(`/recommend/`, { headers, credentials: 'include' });
+                if (res.ok) {
+                    const json = await res.json();
+                    if (Array.isArray(json) && json.length > 0) {
+                        const newNodes: GraphNode[] = [];
+                        const newEdges: GraphEdge[] = [];
+
+                        const existing = new Set(nodes.map(n => n.id));
+
+                        json.forEach((a: Article) => {
+                            if (!existing.has(a.id)) {
+                                const angle = Math.random() * Math.PI * 2;
+                                const dist = 180 + Math.random() * 80;
+                                newNodes.push({
+                                    id: a.id,
+                                    article: a,
+                                    x: clicked.x + Math.cos(angle) * dist,
+                                    y: clicked.y + Math.sin(angle) * dist,
+                                    vx: 0,
+                                    vy: 0,
+                                    radius: 22,
+                                });
+                            }
+                            newEdges.push({ sourceId: clicked.id, targetId: a.id });
+                        });
+
+                        setNodes(prev => [...prev, ...newNodes]);
+                        setEdges(prev => [...prev, ...newEdges]);
+                    }
+                }
+            } catch (err) {
+                console.warn('Recommendation fetch failed', err);
+            }
+            return;
+        }
+
+        // Article Node Interaction: Preview & Expand
         setSelectedNodeId(clicked.id);
 
-        // Fetch related nodes (use auth token or cookies; do not send user id)
+        if (!clicked.article) return;
+
+        // Fetch related nodes (use auth token or cookies)
         const related = await fetchRelatedNodes(clicked.article, authToken);
         if (related.length === 0) return;
 
@@ -551,13 +644,11 @@ function GraphCanvas() {
 
         for (const a of related) {
             if (existing.has(a.id)) {
-                // Node exists, just add edge if missing
                 const already = edges.some(e => (e.sourceId === clicked.id && e.targetId === a.id) || (e.sourceId === a.id && e.targetId === clicked.id));
                 if (!already) {
                     newEdges.push({ sourceId: clicked.id, targetId: a.id });
                 }
             } else {
-                // Create new node near the clicked one
                 const angle = Math.random() * Math.PI * 2;
                 const dist = 160 + Math.random() * 60;
                 newNodes.push({
@@ -582,12 +673,14 @@ function GraphCanvas() {
     };
 
     const selectedNode = selectedNodeId ? nodes.find(n => n.id === selectedNodeId) : null;
+    const isUserSelected = selectedNode?.isUser;
+    const showArticle = selectedNode && selectedNode.article;
 
     return (
         <div className="relative w-full h-[640px] rounded-xl overflow-hidden border border-gray-200 bg-white/70 flex">
             {/* Persistent preview panel on the left */}
             <div className="w-80 min-w-[280px] bg-white/95 border-r border-gray-200 p-4 overflow-auto z-10">
-                {selectedNode ? (
+                {showArticle && selectedNode && selectedNode.article ? (
                     <div className="text-xs text-slate-800">
                         <div className="mb-3">
                             <div className="text-lg font-semibold">{selectedNode.article.title}</div>
@@ -602,6 +695,12 @@ function GraphCanvas() {
                             <strong>Community:</strong> {selectedNode.article.aiSummary || 'No community summary yet.'}
                         </div>
                         <a href={`/article/${selectedNode.id}`} className="mt-3 inline-block text-blue-600 hover:text-blue-800 font-medium">Open article →</a>
+                    </div>
+                ) : isUserSelected ? (
+                    <div className="text-sm text-gray-800">
+                        <div className="text-lg font-bold mb-2">My Recommendations</div>
+                        <p>This is your personal node. It connects to papers recommended for you based on your reading history and interactions.</p>
+                        <p className="mt-2 text-gray-500 text-xs">Click other nodes to explore deeper connections.</p>
                     </div>
                 ) : (
                     <div className="text-sm text-gray-500">
@@ -692,13 +791,15 @@ async function fetchRelatedNodes(origin: Article, authToken?: string): Promise<A
  */
 interface GraphNode {
     id: string;
-    article: Article;
+    article?: Article;
     x: number;
     y: number;
     vx: number;
     vy: number;
     radius: number;
     isFixed?: boolean;
+    isUser?: boolean;
+    visited?: boolean;
 }
 
 /*!

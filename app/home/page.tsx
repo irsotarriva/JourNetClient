@@ -240,7 +240,7 @@ export default function HomePage() {
 
 function PaperCard({ paper }: { paper: Paper }) {
   return (
-    <Link href={`/paper/${paper.id}`}>
+    <Link href={`/article/${paper.id}`}>
       <div className="bg-white/60 backdrop-blur-md rounded-2xl p-6 border border-white/40 shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] cursor-pointer h-full flex flex-col">
         <h3 className="text-xl font-bold text-gray-800 mb-3 line-clamp-2 hover:text-blue-600 transition-colors">
           {paper.title}

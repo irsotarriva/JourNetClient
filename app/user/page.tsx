@@ -40,8 +40,13 @@ interface ReadingListItem {
 }
 
 export default function UserPage() {
-    const { user, isLoading } = useAuth();
+    const { user, isLoading, logout } = useAuth();
     const router = useRouter();
+
+    const handleLogout = () => {
+        logout();
+        router.push('/');
+    };
     const [activeTab, setActiveTab] = useState<TabType>('discussions');
     const [threads, setThreads] = useState<DiscussionThread[]>([]);
     const [loadingThreads, setLoadingThreads] = useState(false);
@@ -135,6 +140,12 @@ export default function UserPage() {
                                 <span className="text-gray-700 font-medium">
                                     Welcome, <span className="text-blue-600">{user.username}</span>
                                 </span>
+                                <button
+                                    onClick={handleLogout}
+                                    className="px-4 py-2 text-sm font-semibold text-gray-700 hover:text-red-600 transition-colors"
+                                >
+                                    Logout
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -228,7 +239,7 @@ function DiscussionsTab({ threads, loading }: { threads: DiscussionThread[]; loa
                     className="bg-white/60 backdrop-blur-sm rounded-xl p-6 border border-white/40 shadow-md hover:shadow-lg transition-all duration-300"
                 >
                     {/* Paper Title */}
-                    <Link href={`/paper/${thread.article_id}`}>
+                    <Link href={`/article/${thread.article_id}`}>
                         <h4 className="text-xl font-bold text-blue-600 hover:text-blue-800 mb-4 cursor-pointer">
                             {thread.paper_title}
                         </h4>
@@ -417,7 +428,7 @@ function ReadingListsTab({ lists, loading }: { lists: any[]; loading: boolean })
                                 ) : listPapers[list.id] && listPapers[list.id].length > 0 ? (
                                     <div className="space-y-3">
                                         {listPapers[list.id].map((paper) => (
-                                            <Link key={paper.id} href={`/paper/${paper.id}`}>
+                                            <Link key={paper.id} href={`/article/${paper.id}`}>
                                                 <div className="bg-white/80 rounded-lg p-4 hover:bg-white hover:shadow-md transition-all duration-200 border border-gray-200">
                                                     <h5 className="font-semibold text-gray-800 hover:text-blue-600 mb-2">
                                                         {paper.title}
