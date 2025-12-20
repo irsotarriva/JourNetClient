@@ -199,14 +199,6 @@ export default function LoginPage() {
                         ) : isLogin ? 'Login' : 'Sign Up'}
                     </button>
                 </form>
-
-                <div className="mt-6 p-4 bg-gradient-to-r from-primary-50 to-accent-50 rounded-xl border border-primary-100">
-                    <p className="text-center text-sm font-semibold text-gray-700 mb-2">Demo accounts:</p>
-                    <div className="space-y-1 text-center text-sm text-gray-600">
-                        <p className="font-mono bg-white/60 rounded-lg px-3 py-1.5 backdrop-blur-sm">alice@university.edu / password123</p>
-                        <p className="font-mono bg-white/60 rounded-lg px-3 py-1.5 backdrop-blur-sm">bob@research.org / password123</p>
-                    </div>
-                </div>
             </div>
         </div>
     );

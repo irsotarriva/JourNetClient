@@ -639,9 +639,6 @@ video {
 .mt-5 {
   margin-top: 1.25rem;
 }
-.mt-6 {
-  margin-top: 1.5rem;
-}
 .mt-8 {
   margin-top: 2rem;
 }
@@ -1113,9 +1110,6 @@ video {
 .bg-white\/50 {
   background-color: rgb(255 255 255 / 0.5);
 }
-.bg-white\/60 {
-  background-color: rgb(255 255 255 / 0.6);
-}
 .bg-white\/70 {
   background-color: rgb(255 255 255 / 0.7);
 }
@@ -1275,9 +1269,6 @@ video {
 }
 .text-center {
   text-align: center;
-}
-.font-mono {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
 .text-2xl {
   font-size: 1.5rem;
