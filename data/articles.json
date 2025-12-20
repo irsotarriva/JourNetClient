@@ -1,0 +1,173 @@
+[
+  {
+    "id": "article-1",
+    "title": "Attention Is All You Need: Transformer Architecture for Neural Machine Translation",
+    "authors": [
+      {
+        "name": "Ashish Vaswani",
+        "orcid": "0000-0003-4567-8901",
+        "email": "vaswani@google.com"
+      },
+      {
+        "name": "Noam Shazeer",
+        "orcid": "0000-0003-5678-9012",
+        "email": "noam@google.com"
+      }
+    ],
+    "abstract": "The dominant sequence transduction models are based on complex recurrent or convolutional neural networks that include an encoder and a decoder. The best performing models also connect the encoder and decoder through an attention mechanism. We propose a new simple network architecture, the Transformer, based solely on attention mechanisms, dispensing with recurrence and convolutions entirely.",
+    "publishDate": "2017-06-12",
+    "pdfUrl": "https://arxiv.org/pdf/1706.03762.pdf",
+    "doi": "10.48550/arXiv.1706.03762",
+    "citation": "Vaswani, A., Shazeer, N., et al. (2017). Attention is all you need. Advances in neural information processing systems, 30.",
+    "content": [
+      {
+        "title": "Introduction",
+        "content": "Recurrent neural networks, long short-term memory and gated recurrent neural networks in particular, have been firmly established as state of the art approaches in sequence modeling and transduction problems..."
+      },
+      {
+        "title": "Background",
+        "content": "The goal of reducing sequential computation also forms the foundation of the Extended Neural GPU, ByteNet and ConvS2S, all of which use convolutional neural networks as basic building block..."
+      },
+      {
+        "title": "Model Architecture",
+        "content": "Most competitive neural sequence transduction models have an encoder-decoder structure. Here, the encoder maps an input sequence of symbol representations to a sequence of continuous representations...",
+        "subsections": [
+          {
+            "title": "Encoder and Decoder Stacks",
+            "content": "The encoder is composed of a stack of N = 6 identical layers. Each layer has two sub-layers..."
+          },
+          {
+            "title": "Attention",
+            "content": "An attention function can be described as mapping a query and a set of key-value pairs to an output..."
+          }
+        ]
+      },
+      {
+        "title": "Experiments",
+        "content": "We conducted experiments on two machine translation tasks: WMT 2014 English-to-German and WMT 2014 English-to-French..."
+      },
+      {
+        "title": "Conclusion",
+        "content": "In this work, we presented the Transformer, the first sequence transduction model based entirely on attention..."
+      }
+    ],
+    "averageRating": 4.8,
+    "totalRatings": 234,
+    "aiSummary": "This groundbreaking paper introduces the Transformer architecture, revolutionizing neural machine translation by relying solely on attention mechanisms. Community feedback highlights its efficiency, scalability, and wide applicability beyond NMT. Some discussions focus on computational requirements and potential improvements to the attention mechanism.",
+    "createdAt": "2024-01-20T08:00:00Z"
+  },
+  {
+    "id": "article-2",
+    "title": "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding",
+    "authors": [
+      {
+        "name": "Jacob Devlin",
+        "orcid": "0000-0002-1234-5678",
+        "email": "jdevlin@google.com"
+      },
+      {
+        "name": "Ming-Wei Chang",
+        "orcid": "0000-0002-2345-6789",
+        "email": "mingweichang@google.com"
+      }
+    ],
+    "abstract": "We introduce a new language representation model called BERT, which stands for Bidirectional Encoder Representations from Transformers. Unlike recent language representation models, BERT is designed to pre-train deep bidirectional representations from unlabeled text by jointly conditioning on both left and right context in all layers.",
+    "publishDate": "2018-10-11",
+    "pdfUrl": "https://arxiv.org/pdf/1810.04805.pdf",
+    "doi": "10.48550/arXiv.1810.04805",
+    "citation": "Devlin, J., Chang, M. W., Lee, K., & Toutanova, K. (2018). Bert: Pre-training of deep bidirectional transformers for language understanding. arXiv preprint arXiv:1810.04805.",
+    "content": [
+      {
+        "title": "Introduction",
+        "content": "Language model pre-training has been shown to be effective for improving many natural language processing tasks..."
+      },
+      {
+        "title": "Related Work",
+        "content": "There is a long history of pre-training general language representations, and we briefly review the most widely-used approaches in this section..."
+      },
+      {
+        "title": "BERT",
+        "content": "We introduce BERT and its detailed implementation in this section. There are two steps in our framework: pre-training and fine-tuning...",
+        "subsections": [
+          {
+            "title": "Pre-training BERT",
+            "content": "Unlike Peters et al. and Radford et al., we use a bidirectional Transformer. We pre-train BERT using two unsupervised tasks..."
+          },
+          {
+            "title": "Fine-tuning BERT",
+            "content": "Fine-tuning is straightforward since the self-attention mechanism in the Transformer allows BERT to model many downstream tasks..."
+          }
+        ]
+      },
+      {
+        "title": "Experiments",
+        "content": "In this section, we present BERT fine-tuning results on eleven NLP tasks..."
+      },
+      {
+        "title": "Conclusion",
+        "content": "Recent empirical improvements due to transfer learning with language models have demonstrated that rich, unsupervised pre-training is an integral part of many language understanding systems..."
+      }
+    ],
+    "averageRating": 4.7,
+    "totalRatings": 189,
+    "aiSummary": "BERT revolutionizes NLP by introducing bidirectional pre-training using transformers. The community praises its versatility across tasks and strong performance. Discussions center on fine-tuning strategies, computational costs, and comparisons with subsequent models like GPT and RoBERTa.",
+    "createdAt": "2024-02-15T10:30:00Z"
+  },
+  {
+    "id": "article-3",
+    "title": "ImageNet Classification with Deep Convolutional Neural Networks",
+    "authors": [
+      {
+        "name": "Alex Krizhevsky",
+        "orcid": "0000-0001-2345-6788",
+        "email": "alex@cs.toronto.edu"
+      },
+      {
+        "name": "Ilya Sutskever",
+        "email": "ilya@openai.com"
+      },
+      {
+        "name": "Geoffrey Hinton",
+        "orcid": "0000-0001-3456-7899",
+        "email": "hinton@cs.toronto.edu"
+      }
+    ],
+    "abstract": "We trained a large, deep convolutional neural network to classify the 1.2 million high-resolution images in the ImageNet LSVRC-2010 contest into the 1000 different classes. On the test data, we achieved top-1 and top-5 error rates of 37.5% and 17.0% which is considerably better than the previous state-of-the-art.",
+    "publishDate": "2012-12-03",
+    "pdfUrl": "https://papers.nips.cc/paper/2012/file/c399862d3b9d6b76c8436e924a68c45b-Paper.pdf",
+    "doi": "10.1145/3065386",
+    "citation": "Krizhevsky, A., Sutskever, I., & Hinton, G. E. (2012). Imagenet classification with deep convolutional neural networks. Advances in neural information processing systems, 25.",
+    "content": [
+      {
+        "title": "Introduction",
+        "content": "Current approaches to object recognition make essential use of machine learning methods. To improve their performance, we can collect larger datasets, learn more powerful models, and use better techniques for preventing overfitting..."
+      },
+      {
+        "title": "The Dataset",
+        "content": "ImageNet is a dataset of over 15 million labeled high-resolution images belonging to roughly 22,000 categories..."
+      },
+      {
+        "title": "The Architecture",
+        "content": "The architecture of our network contains eight learned layers — five convolutional and three fully-connected...",
+        "subsections": [
+          {
+            "title": "ReLU Nonlinearity",
+            "content": "The standard way to model a neuron's output f as a function of its input x is with f(x) = tanh(x) or f(x) = (1 + e^−x)^−1..."
+          },
+          {
+            "title": "Training on Multiple GPUs",
+            "content": "A single GTX 580 GPU has only 3GB of memory, which limits the maximum size of the networks that can be trained on it..."
+          }
+        ]
+      },
+      {
+        "title": "Results",
+        "content": "Our results on ILSVRC-2010 are summarized in Table 1. Our network achieves top-1 and top-5 test set error rates of 37.5% and 17.0%..."
+      }
+    ],
+    "averageRating": 4.9,
+    "totalRatings": 312,
+    "aiSummary": "AlexNet marked a watershed moment in deep learning, demonstrating the power of CNNs for image classification. Community discussions focus on its historical impact, architectural innovations like ReLU and dropout, and its influence on subsequent computer vision research. Many note its role in sparking the deep learning revolution.",
+    "createdAt": "2024-03-01T15:45:00Z"
+  }
+]

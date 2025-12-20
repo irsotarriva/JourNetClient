@@ -1,0 +1,26 @@
+[
+  {
+    "id": "archive-1",
+    "userId": "user-1",
+    "articleId": "article-1",
+    "archivedAt": "2024-04-01T10:20:00Z"
+  },
+  {
+    "id": "archive-2",
+    "userId": "user-1",
+    "articleId": "article-2",
+    "archivedAt": "2024-04-03T11:15:00Z"
+  },
+  {
+    "id": "archive-3",
+    "userId": "user-2",
+    "articleId": "article-1",
+    "archivedAt": "2024-04-01T14:30:00Z"
+  },
+  {
+    "id": "archive-4",
+    "userId": "user-3",
+    "articleId": "article-3",
+    "archivedAt": "2024-04-04T08:30:00Z"
+  }
+]

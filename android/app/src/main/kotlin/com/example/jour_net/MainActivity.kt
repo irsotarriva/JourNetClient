@@ -1,5 +1,0 @@
-package com.example.jour_net
-
-import io.flutter.embedding.android.FlutterActivity
-
-class MainActivity : FlutterActivity()

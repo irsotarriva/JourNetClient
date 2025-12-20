@@ -1,0 +1,40 @@
+[
+  {
+    "id": "user-1",
+    "email": "alice@university.edu",
+    "username": "alice_researcher",
+    "password": "password123",
+    "orcid": "0000-0001-2345-6789",
+    "homeInstitution": "MIT",
+    "nationality": "USA",
+    "age": 32,
+    "gender": "female",
+    "researchInterests": ["Machine Learning", "Natural Language Processing", "Computer Vision"],
+    "createdAt": "2024-01-15T10:00:00Z"
+  },
+  {
+    "id": "user-2",
+    "email": "bob@research.org",
+    "username": "bob_scientist",
+    "password": "password123",
+    "orcid": "0000-0002-3456-7890",
+    "homeInstitution": "Stanford University",
+    "nationality": "Canada",
+    "age": 28,
+    "gender": "male",
+    "researchInterests": ["Quantum Computing", "Cryptography"],
+    "createdAt": "2024-02-20T14:30:00Z"
+  },
+  {
+    "id": "user-3",
+    "email": "carol@institute.edu",
+    "username": "carol_phd",
+    "password": "password123",
+    "homeInstitution": "Oxford University",
+    "nationality": "UK",
+    "age": 35,
+    "gender": "female",
+    "researchInterests": ["Bioinformatics", "Genomics", "Systems Biology"],
+    "createdAt": "2024-03-10T09:15:00Z"
+  }
+]

@@ -1,0 +1,102 @@
+[
+  {
+    "id": "comment-1",
+    "articleId": "article-1",
+    "userId": "user-1",
+    "content": "The self-attention mechanism is truly revolutionary. I've been using Transformers for various NLP tasks and the parallelization benefits are incredible compared to RNNs. One question: has anyone experimented with different positional encoding schemes?",
+    "isAnonymous": false,
+    "aiLabels": ["meaningful", "critical", "helpful"],
+    "createdAt": "2024-04-01T10:15:00Z",
+    "updatedAt": "2024-04-01T10:15:00Z",
+    "likes": 23,
+    "dislikes": 1
+  },
+  {
+    "id": "comment-2",
+    "articleId": "article-1",
+    "userId": "user-2",
+    "parentId": "comment-1",
+    "content": "Great point! I've tried learned positional embeddings and they work comparably well. The key insight is that the model needs some way to distinguish positions. Rotary embeddings (RoPE) are another interesting alternative that's gained traction recently.",
+    "isAnonymous": false,
+    "aiLabels": ["meaningful", "helpful"],
+    "createdAt": "2024-04-01T14:20:00Z",
+    "updatedAt": "2024-04-01T14:20:00Z",
+    "likes": 15,
+    "dislikes": 0
+  },
+  {
+    "id": "comment-3",
+    "articleId": "article-1",
+    "userId": "user-3",
+    "content": "I'm concerned about the computational requirements for long sequences. The O(n²) complexity of self-attention becomes prohibitive for documents longer than a few thousand tokens. Have there been successful attempts at linearizing attention?",
+    "isAnonymous": false,
+    "aiLabels": ["meaningful", "critical"],
+    "createdAt": "2024-04-02T09:30:00Z",
+    "updatedAt": "2024-04-02T09:30:00Z",
+    "likes": 31,
+    "dislikes": 2
+  },
+  {
+    "id": "comment-4",
+    "articleId": "article-2",
+    "userId": "user-1",
+    "content": "BERT's bidirectional training is elegant, but the [MASK] token creates a discrepancy between pre-training and fine-tuning. Has anyone found this to be a significant issue in practice?",
+    "isAnonymous": false,
+    "aiLabels": ["meaningful", "critical"],
+    "createdAt": "2024-04-03T11:00:00Z",
+    "updatedAt": "2024-04-03T11:00:00Z",
+    "likes": 18,
+    "dislikes": 0
+  },
+  {
+    "id": "comment-5",
+    "articleId": "article-2",
+    "userId": "user-2",
+    "parentId": "comment-4",
+    "content": "In my experiments, the pre-training/fine-tuning gap hasn't been a major bottleneck. The model seems robust to this mismatch. That said, approaches like SpanBERT and ELECTRA address this more directly.",
+    "isAnonymous": false,
+    "aiLabels": ["helpful", "meaningful"],
+    "createdAt": "2024-04-03T15:45:00Z",
+    "updatedAt": "2024-04-03T15:45:00Z",
+    "likes": 12,
+    "dislikes": 1
+  },
+  {
+    "id": "comment-6",
+    "articleId": "article-3",
+    "userId": "user-3",
+    "content": "Looking back, AlexNet's impact cannot be overstated. The use of ReLU, dropout, and data augmentation set the template for modern deep learning. I still reference this paper when teaching CNN fundamentals.",
+    "isAnonymous": false,
+    "aiLabels": ["meaningful", "helpful"],
+    "createdAt": "2024-04-04T08:20:00Z",
+    "updatedAt": "2024-04-04T08:20:00Z",
+    "likes": 45,
+    "dislikes": 0
+  },
+  {
+    "id": "comment-7",
+    "articleId": "article-3",
+    "userId": "user-1",
+    "parentId": "comment-6",
+    "content": "Absolutely agree. It's also worth noting how they made multi-GPU training practical, which was quite innovative for 2012.",
+    "isAnonymous": false,
+    "aiLabels": ["meaningful", "helpful"],
+    "createdAt": "2024-04-04T10:30:00Z",
+    "updatedAt": "2024-04-04T10:30:00Z",
+    "likes": 22,
+    "dislikes": 0
+  },
+  {
+    "id": "comment-8",
+    "articleId": "article-1",
+    "userId": "user-2",
+    "content": "The paper could have included more ablation studies on the number of attention heads and layer depths.",
+    "sectionReferences": ["Experiments"],
+    "isAnonymous": true,
+    "aiLabels": ["critical", "meaningful"],
+    "createdAt": "2024-04-05T16:00:00Z",
+    "updatedAt": "2024-04-05T16:00:00Z",
+    "likes": 8,
+    "dislikes": 3
+  }
+]
