@@ -14,6 +14,14 @@ export async function fetchAPI(endpoint: string, options: RequestInit = {}) {
         headers,
     });
 
+    // Handle empty responses (204 No Content)
+    if (response.status === 204 || response.headers.get('content-length') === '0') {
+        if (!response.ok) {
+            throw new Error('Request failed');
+        }
+        return null;
+    }
+
     const data = await response.json();
 
     if (!response.ok) {

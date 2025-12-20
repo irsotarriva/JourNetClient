@@ -15,6 +15,7 @@ import { useAuth } from '@/lib/auth';
 import NetworkBackground from '@/components/NetworkBackground';
 import { db } from '@/lib/db';
 import { Article } from '@/lib/types';
+import { fetchAPI } from '@/lib/api';
 
 export default function ExplorePage() {
     const { user, isLoading, logout } = useAuth();
@@ -120,6 +121,7 @@ function GraphCanvas() {
     const [edges, setEdges] = useState<GraphEdge[]>([]);
     const [hoverNodeId, setHoverNodeId] = useState<string | null>(null);
     const [dragState, setDragState] = useState<{ id: string; offsetX: number; offsetY: number } | null>(null);
+    const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false);
 
     // Selected node for permanent preview (click to change)
     const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
@@ -582,46 +584,73 @@ function GraphCanvas() {
 
         // User Node Interaction: Fetch Recommendations
         if (clicked.isUser) {
-            if (clicked.visited) return; // Already fetched
+            if (isLoadingRecommendations) return; // Already loading
 
-            // Mark visited
-            setNodes(prev => prev.map(n => n.id === clicked.id ? { ...n, visited: true } : n));
+            setIsLoadingRecommendations(true);
 
             try {
-                const headers: Record<string, string> = {};
-                if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
-                const res = await fetch(`/recommend/`, { headers, credentials: 'include' });
-                if (res.ok) {
-                    const json = await res.json();
-                    if (Array.isArray(json) && json.length > 0) {
-                        const newNodes: GraphNode[] = [];
-                        const newEdges: GraphEdge[] = [];
+                const json = await fetchAPI('/recommend/?top_k=8');
+                if (Array.isArray(json) && json.length > 0) {
+                    const newNodes: GraphNode[] = [];
+                    const newEdges: GraphEdge[] = [];
 
-                        const existing = new Set(nodes.map(n => n.id));
+                    // Get existing paper node IDs (excluding user node)
+                    const existingPaperIds = new Set(
+                        nodes.filter(n => !n.isUser && n.article).map(n => n.article!.id.toString())
+                    );
 
-                        json.forEach((a: Article) => {
-                            if (!existing.has(a.id)) {
-                                const angle = Math.random() * Math.PI * 2;
-                                const dist = 180 + Math.random() * 80;
-                                newNodes.push({
-                                    id: a.id,
-                                    article: a,
-                                    x: clicked.x + Math.cos(angle) * dist,
-                                    y: clicked.y + Math.sin(angle) * dist,
-                                    vx: 0,
-                                    vy: 0,
-                                    radius: 22,
-                                });
+                    json.forEach((a: any) => {
+                        const paperId = a.id?.toString() || '';
+                        if (paperId && !existingPaperIds.has(paperId)) {
+                            const angle = Math.random() * Math.PI * 2;
+                            const dist = 180 + Math.random() * 80;
+                            newNodes.push({
+                                id: paperId,
+                                article: {
+                                    id: paperId,
+                                    title: a.title || 'Untitled',
+                                    abstract: a.abstract || '',
+                                    authors: a.authors || [],
+                                    categories: a.categories || '',
+                                    aiSummary: a.comments_summary || '',
+                                    publishDate: a.updated_date || '',
+                                    citation: '',
+                                    content: [],
+                                    averageRating: 0,
+                                    totalRatings: 0,
+                                    createdAt: '',
+                                } as Article,
+                                x: clicked.x + Math.cos(angle) * dist,
+                                y: clicked.y + Math.sin(angle) * dist,
+                                vx: 0,
+                                vy: 0,
+                                radius: 22,
+                            });
+                            existingPaperIds.add(paperId);
+                        }
+                        // Always add edge to user node
+                        if (paperId) {
+                            const edgeExists = edges.some(
+                                e => (e.sourceId === clicked.id && e.targetId === paperId) ||
+                                    (e.sourceId === paperId && e.targetId === clicked.id)
+                            );
+                            if (!edgeExists) {
+                                newEdges.push({ sourceId: clicked.id, targetId: paperId });
                             }
-                            newEdges.push({ sourceId: clicked.id, targetId: a.id });
-                        });
+                        }
+                    });
 
+                    if (newNodes.length > 0) {
                         setNodes(prev => [...prev, ...newNodes]);
+                    }
+                    if (newEdges.length > 0) {
                         setEdges(prev => [...prev, ...newEdges]);
                     }
                 }
             } catch (err) {
                 console.warn('Recommendation fetch failed', err);
+            } finally {
+                setIsLoadingRecommendations(false);
             }
             return;
         }
@@ -700,6 +729,14 @@ function GraphCanvas() {
                     <div className="text-sm text-gray-800">
                         <div className="text-lg font-bold mb-2">My Recommendations</div>
                         <p>This is your personal node. It connects to papers recommended for you based on your reading history and interactions.</p>
+                        {isLoadingRecommendations ? (
+                            <div className="mt-3 flex items-center space-x-2 text-blue-600">
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                                <span>Loading recommendations...</span>
+                            </div>
+                        ) : (
+                            <p className="mt-3 text-blue-600 font-medium">Click the user node again to fetch more recommendations!</p>
+                        )}
                         <p className="mt-2 text-gray-500 text-xs">Click other nodes to explore deeper connections.</p>
                     </div>
                 ) : (
@@ -762,15 +799,23 @@ function escapeHtml(s: string): string {
 async function fetchRelatedNodes(origin: Article, authToken?: string): Promise<Article[]> {
     // Try backend friends recommender first
     try {
-        const headers: Record<string, string> = {};
-        if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
-        const url = `/recommend/friends/?article_id=${encodeURIComponent(origin.id)}`;
-        const res = await fetch(url, { headers, credentials: 'include' });
-        if (res.ok) {
-            const json = await res.json();
-            if (Array.isArray(json) && json.length > 0) {
-                return json.slice(0, 6);
-            }
+        const json = await fetchAPI(`/recommend/friends/?paper_id=${encodeURIComponent(origin.id)}`);
+        if (Array.isArray(json) && json.length > 0) {
+            // Map backend response to Article format
+            return json.slice(0, 6).map((a: any) => ({
+                id: a.id?.toString() || '',
+                title: a.title || 'Untitled',
+                abstract: a.abstract || '',
+                authors: a.authors || [],
+                categories: a.categories || '',
+                aiSummary: a.comments_summary || '',
+                publishDate: a.updated_date || '',
+                citation: '',
+                content: [],
+                averageRating: 0,
+                totalRatings: 0,
+                createdAt: '',
+            } as Article));
         }
     } catch (err) {
         console.warn('recommend/friends fetch failed, falling back to local DB', err);
