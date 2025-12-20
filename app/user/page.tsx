@@ -83,7 +83,7 @@ export default function UserPage() {
     const loadReadingLists = async () => {
         setLoadingLists(true);
         try {
-            const response = await fetchAPI('/reading-list/');
+            const response = await fetchAPI('/reading-lists/');
             setReadingLists(response || []);
         } catch (error) {
             console.error('Failed to load reading lists:', error);
@@ -194,7 +194,7 @@ export default function UserPage() {
                                 <DiscussionsTab threads={threads} loading={loadingThreads} onRefresh={loadDiscussionThreads} />
                             )}
                             {activeTab === 'reading' && (
-                                <ReadingListsTab lists={readingLists} loading={loadingLists} />
+                                <ReadingListsTab lists={readingLists} loading={loadingLists} onRefresh={loadReadingLists} />
                             )}
                             {activeTab === 'personal' && (
                                 <PersonalInfoTab user={user} />
@@ -361,10 +361,37 @@ function CommentNode({
     );
 }
 
-function ReadingListsTab({ lists, loading }: { lists: any[]; loading: boolean }) {
+function ReadingListsTab({ lists, loading, onRefresh }: { lists: any[]; loading: boolean; onRefresh: () => void }) {
     const [expandedLists, setExpandedLists] = useState<Set<number>>(new Set());
     const [listPapers, setListPapers] = useState<Record<number, any[]>>({});
     const [loadingPapers, setLoadingPapers] = useState<Set<number>>(new Set());
+
+    const handleDeleteList = async (listId: number, e: React.MouseEvent) => {
+        e.stopPropagation();
+
+        try {
+            await fetchAPI(`/reading-lists/${listId}`, { method: 'DELETE' });
+            onRefresh();
+        } catch (error) {
+            console.error('Failed to delete list:', error);
+        }
+    };
+
+    const handleRemovePaper = async (listId: number, paperId: number, e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        try {
+            await fetchAPI(`/reading-lists/${listId}/papers/${paperId}`, { method: 'DELETE' });
+            setListPapers(prev => ({
+                ...prev,
+                [listId]: prev[listId] ? prev[listId].filter(p => p.id !== paperId) : []
+            }));
+            onRefresh();
+        } catch (error) {
+            console.error('Failed to remove paper:', error);
+        }
+    };
 
     const toggleList = async (listId: number) => {
         const newExpanded = new Set(expandedLists);
@@ -387,7 +414,7 @@ function ReadingListsTab({ lists, loading }: { lists: any[]; loading: boolean })
         setLoadingPapers(prev => new Set(prev).add(listId));
 
         try {
-            const response = await fetchAPI(`/reading-list/${listId}/papers`);
+            const response = await fetchAPI(`/reading-lists/${listId}/papers`);
             setListPapers(prev => ({
                 ...prev,
                 [listId]: response.papers || []
@@ -438,12 +465,12 @@ function ReadingListsTab({ lists, loading }: { lists: any[]; loading: boolean })
                     className="bg-white/60 backdrop-blur-sm rounded-xl border border-white/40 shadow-md hover:shadow-lg transition-all duration-300"
                 >
                     {/* List Header */}
-                    <div
-                        onClick={() => toggleList(list.id)}
-                        className="p-6 cursor-pointer hover:bg-white/40 transition-colors rounded-xl"
-                    >
+                    <div className="p-6 rounded-xl hover:bg-white/40 transition-colors">
                         <div className="flex items-center justify-between">
-                            <div className="flex-1">
+                            <div
+                                className="flex-1 cursor-pointer"
+                                onClick={() => toggleList(list.id)}
+                            >
                                 <h4 className="text-xl font-bold text-gray-800 mb-2">{list.name}</h4>
                                 <p className="text-sm text-gray-600">
                                     {list.paperid?.length || 0} paper{(list.paperid?.length || 0) !== 1 ? 's' : ''}
@@ -451,16 +478,28 @@ function ReadingListsTab({ lists, loading }: { lists: any[]; loading: boolean })
                                     Created {new Date(list.created_at).toLocaleDateString()}
                                 </p>
                             </div>
-                            <div className="ml-4">
-                                <svg
-                                    className={`w-6 h-6 text-gray-600 transition-transform duration-300 ${expandedLists.has(list.id) ? 'rotate-180' : ''
-                                        }`}
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
+                            <div className="ml-4 flex items-center space-x-3">
+                                <button
+                                    type="button"
+                                    onClick={(e) => handleDeleteList(list.id, e)}
+                                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors z-10 relative"
+                                    title="Delete list"
                                 >
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                </svg>
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
+                                <div onClick={() => toggleList(list.id)} className="cursor-pointer p-1">
+                                    <svg
+                                        className={`w-6 h-6 text-gray-600 transition-transform duration-300 ${expandedLists.has(list.id) ? 'rotate-180' : ''
+                                            }`}
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -477,9 +516,9 @@ function ReadingListsTab({ lists, loading }: { lists: any[]; loading: boolean })
                                 ) : listPapers[list.id] && listPapers[list.id].length > 0 ? (
                                     <div className="space-y-3">
                                         {listPapers[list.id].map((paper) => (
-                                            <Link key={paper.id} href={`/article/${paper.id}`}>
-                                                <div className="bg-white/80 rounded-lg p-4 hover:bg-white hover:shadow-md transition-all duration-200 border border-gray-200">
-                                                    <h5 className="font-semibold text-gray-800 hover:text-blue-600 mb-2">
+                                            <div key={paper.id} className="relative group bg-white/80 rounded-lg border border-gray-200 hover:bg-white hover:shadow-md transition-all duration-200">
+                                                <Link href={`/article/${paper.id}`} className="block p-4">
+                                                    <h5 className="font-semibold text-gray-800 hover:text-blue-600 mb-2 pr-6">
                                                         {paper.title}
                                                     </h5>
                                                     {paper.abstract && (
@@ -497,8 +536,18 @@ function ReadingListsTab({ lists, loading }: { lists: any[]; loading: boolean })
                                                             ))}
                                                         </div>
                                                     )}
-                                                </div>
-                                            </Link>
+                                                </Link>
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => handleRemovePaper(list.id, paper.id, e)}
+                                                    className="absolute top-2 right-2 p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded opacity-0 group-hover:opacity-100 transition-all"
+                                                    title="Remove paper"
+                                                >
+                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                    </svg>
+                                                </button>
+                                            </div>
                                         ))}
                                     </div>
                                 ) : (

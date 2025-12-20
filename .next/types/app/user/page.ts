@@ -1,8 +1,8 @@
-// File: /Users/andre/Desktop/PBC/JourNetClient/app/explore/page.tsx
-import * as entry from '../../../../app/explore/page.js'
+// File: /Users/andre/Desktop/PBC/JourNetClient/app/user/page.tsx
+import * as entry from '../../../../app/user/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 
-type TEntry = typeof import('../../../../app/explore/page.js')
+type TEntry = typeof import('../../../../app/user/page.js')
 
 type SegmentParams<T extends Object = any> = T extends Record<string, any>
   ? { [K in keyof T]: T[K] extends string ? string | string[] | undefined : never }
