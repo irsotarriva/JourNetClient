@@ -2,13 +2,11 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from './types';
-import { db } from './db';
-import { fetchAPI } from './api';
 
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<boolean>;
-  signup: (email: string, username: string, password: string, confirmPassword: string) => Promise<boolean>;
+  signup: (email: string, username: string, password: string) => Promise<boolean>;
   logout: () => void;
   isLoading: boolean;
 }
@@ -19,71 +17,88 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Helper to fetch user profile
-  const fetchUserProfile = async () => {
-    try {
-      const userData = await fetchAPI('/auth/me');
-      // Map API response to User type if needed, or use directly
-      // Assuming API returns { id, name, email } 
-      // The current User type might have 'username' which maps to 'name' from API
-      // Adjusting based on standard conventions, we might need to cast or map
-      setUser({
-        id: userData.id,
-        username: userData.name,
-        email: userData.email,
-        password: '', // Password is not returned by API
-        researchInterests: [], // Not yet in this API endpoint
-        createdAt: new Date().toISOString(), // Fallback
-      });
-    } catch (error) {
-      console.error('Failed to fetch user:', error);
-      setUser(null);
-      localStorage.removeItem('access_token');
-    }
-  };
-
   useEffect(() => {
-    const initAuth = async () => {
-      const token = localStorage.getItem('access_token');
-      if (token) {
-        await fetchUserProfile();
-      }
+    // Check for stored user session
+    const storedUserId = localStorage.getItem('userId');
+    if (storedUserId) {
+      // Fetch user from API
+      fetch(`/api/auth/me?userId=${storedUserId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.user) {
+            setUser({
+              id: data.user.id,
+              email: data.user.email,
+              username: data.user.username,
+              password: '',
+              researchInterests: [],
+              createdAt: new Date().toISOString(),
+            });
+          }
+          setIsLoading(false);
+        })
+        .catch(() => {
+          setIsLoading(false);
+        });
+    } else {
       setIsLoading(false);
-    };
-    initAuth();
+    }
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      const data = await fetchAPI('/auth/login', {
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
 
-      localStorage.setItem('access_token', data.access_token);
-      await fetchUserProfile();
-      return true;
+      const data = await response.json();
+
+      if (response.ok && data.user) {
+        const user: User = {
+          id: data.user.id,
+          email: data.user.email,
+          username: data.user.username,
+          password: '',
+          researchInterests: [],
+          createdAt: new Date().toISOString(),
+        };
+        setUser(user);
+        localStorage.setItem('userId', user.id);
+        return true;
+      }
+      return false;
     } catch (error) {
       console.error('Login error:', error);
       return false;
     }
   };
 
-  const signup = async (email: string, username: string, password: string, confirmPassword: string): Promise<boolean> => {
+  const signup = async (email: string, username: string, password: string): Promise<boolean> => {
     try {
-      // The backend expects 'name', 'email', 'password', 'confirm_password'
-      await fetchAPI('/auth/register', {
+      const response = await fetch('/api/auth/signup', {
         method: 'POST',
-        body: JSON.stringify({
-          name: username,
-          email,
-          password,
-          confirm_password: confirmPassword
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, username, password }),
       });
 
-      // Auto-login after signup
-      return await login(email, password);
+      const data = await response.json();
+
+      if (response.ok && data.user) {
+        const user: User = {
+          id: data.user.id,
+          email: data.user.email,
+          username: data.user.username,
+          password: '',
+          researchInterests: [],
+          createdAt: new Date().toISOString(),
+        };
+        setUser(user);
+        localStorage.setItem('userId', user.id);
+        return true;
+      }
+      return false;
     } catch (error) {
       console.error('Signup error:', error);
       return false;
@@ -92,8 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('userId'); // Cleanup old mock key
+    localStorage.removeItem('userId');
   };
 
   return (

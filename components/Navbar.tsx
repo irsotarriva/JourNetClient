@@ -14,7 +14,7 @@ export default function Navbar() {
   if (!user) return null;
 
   return (
-    <nav className="gradient-primary text-white shadow-xl backdrop-blur-sm">
+    <nav className="gradient-primary text-white shadow-xl backdrop-blur-sm sticky top-0 z-50">
       <div className="container mx-auto px-6">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center space-x-10">
@@ -29,33 +29,30 @@ export default function Navbar() {
             <div className="flex space-x-2">
               <Link
                 href="/home"
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium smooth-transition ${
-                  isActive('/home')
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium smooth-transition ${isActive('/home')
                     ? 'bg-white/20 shadow-lg backdrop-blur-md'
                     : 'hover:bg-white/10'
-                }`}
+                  }`}
               >
                 <Home className="w-4 h-4" />
                 <span>Home</span>
               </Link>
               <Link
                 href="/search"
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium smooth-transition ${
-                  isActive('/search')
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium smooth-transition ${isActive('/search')
                     ? 'bg-white/20 shadow-lg backdrop-blur-md'
                     : 'hover:bg-white/10'
-                }`}
+                  }`}
               >
                 <Search className="w-4 h-4" />
                 <span>Search</span>
               </Link>
               <Link
                 href="/settings"
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium smooth-transition ${
-                  isActive('/settings')
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium smooth-transition ${isActive('/settings')
                     ? 'bg-white/20 shadow-lg backdrop-blur-md'
                     : 'hover:bg-white/10'
-                }`}
+                  }`}
               >
                 <Settings className="w-4 h-4" />
                 <span>Settings</span>

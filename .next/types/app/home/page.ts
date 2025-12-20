@@ -1,4 +1,4 @@
-// File: /Users/andre/Desktop/PBC/JourNetClient/app/home/page.tsx
+// File: E:\Document\Miscellaneous Documents\PBC2025\Learning-Phase-3\Test\paper-discussion-platform\app\home\page.tsx
 import * as entry from '../../../../app/home/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

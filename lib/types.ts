@@ -33,6 +33,7 @@ export interface Article {
   averageRating: number;
   totalRatings: number;
   aiSummary?: string;
+  categories: string[];
   createdAt: string;
 }
 
