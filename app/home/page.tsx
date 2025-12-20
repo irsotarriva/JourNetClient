@@ -23,6 +23,7 @@ export default function HomePage() {
   const { user, isLoading, logout } = useAuth();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
+  const [resultLimit, setResultLimit] = useState('10');
   const [papers, setPapers] = useState<Paper[]>([]);
   const [searching, setSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
@@ -40,7 +41,8 @@ export default function HomePage() {
     setSearching(true);
     setHasSearched(true);
     try {
-      const results = await fetchAPI(`/recommend/search/?query=${encodeURIComponent(searchQuery)}&top_k=10`);
+      const topK = parseInt(resultLimit) || 10;
+      const results = await fetchAPI(`/recommend/search/?query=${encodeURIComponent(searchQuery)}&top_k=${topK}`);
       setPapers(results);
     } catch (error) {
       console.error('Search error:', error);
@@ -135,6 +137,22 @@ export default function HomePage() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search for papers by topic, keywords, or authors..."
                   className="flex-1 px-6 py-4 bg-transparent text-gray-800 placeholder-gray-500 focus:outline-none text-lg"
+                />
+                <input
+                  type="text"
+                  value={resultLimit}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === '' || /^\d+$/.test(val)) {
+                      setResultLimit(val);
+                    }
+                  }}
+                  onBlur={() => {
+                    if (!resultLimit) setResultLimit('10');
+                  }}
+                  placeholder="10"
+                  className="w-20 px-4 py-4 bg-transparent border-l border-gray-300 text-gray-800 focus:outline-none text-lg text-center font-medium"
+                  title="Number of results (Default: 10)"
                 />
                 <button
                   type="submit"

@@ -291,7 +291,7 @@ export default function ArticlePage() {
         method: 'POST',
         body: JSON.stringify({ paperId: parseInt(articleId) }),
       });
-      alert('Paper added to reading list!');
+      // alert('Paper added to reading list!');
       // Update local state to show it? Or just close?
       setReadingListModalOpen(false);
     } catch (e: any) {
@@ -600,8 +600,8 @@ export default function ArticlePage() {
                       onClick={() => !isAdded && addToReadingList(list.id)}
                       disabled={addingToPaper || isAdded}
                       className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all text-left group ${isAdded
-                          ? 'bg-green-50 border-green-200 cursor-default'
-                          : 'border-gray-200 hover:border-blue-400 hover:bg-blue-50'
+                        ? 'bg-green-50 border-green-200 cursor-default'
+                        : 'border-gray-200 hover:border-blue-400 hover:bg-blue-50'
                         }`}
                     >
                       <div>
@@ -636,7 +636,7 @@ export default function ArticlePage() {
                   value={newListName}
                   onChange={(e) => setNewListName(e.target.value)}
                   placeholder="List Name (e.g. 'Thesis Research')"
-                  className="flex-1 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  className="flex-1 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-900"
                 />
                 <button
                   onClick={createReadingList}

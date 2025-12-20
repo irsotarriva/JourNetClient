@@ -473,7 +473,9 @@ function GraphCanvas() {
             const dx = mx - panStartRef.current.mx;
             const dy = my - panStartRef.current.my;
             if (panStartRef.current) {
-                setCamera(prev => ({ ...prev, tx: panStartRef.current!.tx + dx, ty: panStartRef.current!.ty + dy }));
+                const startTx = panStartRef.current.tx;
+                const startTy = panStartRef.current.ty;
+                setCamera(prev => ({ ...prev, tx: startTx + dx, ty: startTy + dy }));
             }
             setHoverNodeId(null);
             return;
