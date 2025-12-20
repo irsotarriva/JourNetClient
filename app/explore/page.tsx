@@ -122,6 +122,7 @@ function GraphCanvas() {
     const [hoverNodeId, setHoverNodeId] = useState<string | null>(null);
     const [dragState, setDragState] = useState<{ id: string; offsetX: number; offsetY: number } | null>(null);
     const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false);
+    const [expandingNodeId, setExpandingNodeId] = useState<string | null>(null);
 
     // Selected node for permanent preview (click to change)
     const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
@@ -179,7 +180,7 @@ function GraphCanvas() {
         raf = requestAnimationFrame(loop);
         return () => cancelAnimationFrame(raf);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [nodes, edges, hoverNodeId, camera]);
+    }, [nodes, edges, hoverNodeId, camera, expandingNodeId]);
 
     /*!
      * @brief Converts screen coords to world coords using camera.
@@ -437,6 +438,19 @@ function GraphCanvas() {
             // Reset styles
             ctx.shadowColor = 'transparent';
             ctx.shadowBlur = 0;
+
+            // Loading pulse for expanding node
+            if (expandingNodeId === n.id) {
+                const time = Date.now() / 200;
+                const radius = n.radius + 6 + Math.sin(time) * 3;
+                ctx.beginPath();
+                ctx.arc(n.x, n.y, radius, 0, Math.PI * 2);
+                ctx.strokeStyle = n.isUser ? '#f59e0b' : '#8b5cf6';
+                ctx.lineWidth = 2 / camera.scale;
+                ctx.setLineDash([4 / camera.scale, 4 / camera.scale]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
         }
 
         ctx.restore();
@@ -659,45 +673,51 @@ function GraphCanvas() {
         setSelectedNodeId(clicked.id);
 
         if (!clicked.article) return;
+        if (expandingNodeId) return; // Prevent multiple expansions at once
 
-        // Fetch related nodes (use auth token or cookies)
-        const related = await fetchRelatedNodes(clicked.article, authToken);
-        if (related.length === 0) return;
+        setExpandingNodeId(clicked.id);
+        try {
+            // Fetch related nodes (use auth token or cookies)
+            const related = await fetchRelatedNodes(clicked.article, authToken);
+            if (related.length === 0) return;
 
-        // Registry map
-        const existing = new Map<string, GraphNode>();
-        nodes.forEach(n => existing.set(n.id, n));
+            // Registry map
+            const existing = new Map<string, GraphNode>();
+            nodes.forEach(n => existing.set(n.id, n));
 
-        const newNodes: GraphNode[] = [];
-        const newEdges: GraphEdge[] = [];
+            const newNodes: GraphNode[] = [];
+            const newEdges: GraphEdge[] = [];
 
-        for (const a of related) {
-            if (existing.has(a.id)) {
-                const already = edges.some(e => (e.sourceId === clicked.id && e.targetId === a.id) || (e.sourceId === a.id && e.targetId === clicked.id));
-                if (!already) {
+            for (const a of related) {
+                if (existing.has(a.id)) {
+                    const already = edges.some(e => (e.sourceId === clicked.id && e.targetId === a.id) || (e.sourceId === a.id && e.targetId === clicked.id));
+                    if (!already) {
+                        newEdges.push({ sourceId: clicked.id, targetId: a.id });
+                    }
+                } else {
+                    const angle = Math.random() * Math.PI * 2;
+                    const dist = 160 + Math.random() * 60;
+                    newNodes.push({
+                        id: a.id,
+                        article: a,
+                        x: clicked.x + Math.cos(angle) * dist,
+                        y: clicked.y + Math.sin(angle) * dist,
+                        vx: 0,
+                        vy: 0,
+                        radius: 22,
+                    });
                     newEdges.push({ sourceId: clicked.id, targetId: a.id });
                 }
-            } else {
-                const angle = Math.random() * Math.PI * 2;
-                const dist = 160 + Math.random() * 60;
-                newNodes.push({
-                    id: a.id,
-                    article: a,
-                    x: clicked.x + Math.cos(angle) * dist,
-                    y: clicked.y + Math.sin(angle) * dist,
-                    vx: 0,
-                    vy: 0,
-                    radius: 22,
-                });
-                newEdges.push({ sourceId: clicked.id, targetId: a.id });
             }
-        }
 
-        if (newNodes.length > 0) {
-            setNodes(prev => [...prev, ...newNodes]);
-        }
-        if (newEdges.length > 0) {
-            setEdges(prev => [...prev, ...newEdges]);
+            if (newNodes.length > 0) {
+                setNodes(prev => [...prev, ...newNodes]);
+            }
+            if (newEdges.length > 0) {
+                setEdges(prev => [...prev, ...newEdges]);
+            }
+        } finally {
+            setExpandingNodeId(null);
         }
     };
 
