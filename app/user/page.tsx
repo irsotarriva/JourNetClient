@@ -28,12 +28,25 @@ interface DiscussionThread {
     thread: ThreadComment;
 }
 
+interface ReadingListItem {
+    id: number;
+    title: string;
+    description: string;
+    created_at: string;
+    papers: {
+        article_id: number;
+        title: string;
+    }[];
+}
+
 export default function UserPage() {
     const { user, isLoading } = useAuth();
     const router = useRouter();
     const [activeTab, setActiveTab] = useState<TabType>('discussions');
     const [threads, setThreads] = useState<DiscussionThread[]>([]);
     const [loadingThreads, setLoadingThreads] = useState(false);
+    const [readingLists, setReadingLists] = useState<ReadingListItem[]>([]);
+    const [loadingLists, setLoadingLists] = useState(false);
 
     useEffect(() => {
         if (!isLoading && !user) {
@@ -44,6 +57,8 @@ export default function UserPage() {
     useEffect(() => {
         if (user && activeTab === 'discussions') {
             loadDiscussionThreads();
+        } else if (user && activeTab === 'reading') {
+            loadReadingLists();
         }
     }, [user, activeTab]);
 
@@ -57,6 +72,19 @@ export default function UserPage() {
             setThreads([]);
         } finally {
             setLoadingThreads(false);
+        }
+    };
+
+    const loadReadingLists = async () => {
+        setLoadingLists(true);
+        try {
+            const response = await fetchAPI('/reading-list/');
+            setReadingLists(response || []);
+        } catch (error) {
+            console.error('Failed to load reading lists:', error);
+            setReadingLists([]);
+        } finally {
+            setLoadingLists(false);
         }
     };
 
@@ -123,8 +151,8 @@ export default function UserPage() {
                             <button
                                 onClick={() => setActiveTab('discussions')}
                                 className={`flex-1 py-3 px-6 rounded-xl font-semibold text-lg transition-all duration-300 ${activeTab === 'discussions'
-                                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
-                                        : 'text-gray-700 hover:text-gray-900 hover:bg-white/50'
+                                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
+                                    : 'text-gray-700 hover:text-gray-900 hover:bg-white/50'
                                     }`}
                             >
                                 Discussions
@@ -132,8 +160,8 @@ export default function UserPage() {
                             <button
                                 onClick={() => setActiveTab('reading')}
                                 className={`flex-1 py-3 px-6 rounded-xl font-semibold text-lg transition-all duration-300 ${activeTab === 'reading'
-                                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
-                                        : 'text-gray-700 hover:text-gray-900 hover:bg-white/50'
+                                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
+                                    : 'text-gray-700 hover:text-gray-900 hover:bg-white/50'
                                     }`}
                             >
                                 Reading Lists
@@ -141,8 +169,8 @@ export default function UserPage() {
                             <button
                                 onClick={() => setActiveTab('personal')}
                                 className={`flex-1 py-3 px-6 rounded-xl font-semibold text-lg transition-all duration-300 ${activeTab === 'personal'
-                                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
-                                        : 'text-gray-700 hover:text-gray-900 hover:bg-white/50'
+                                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
+                                    : 'text-gray-700 hover:text-gray-900 hover:bg-white/50'
                                     }`}
                             >
                                 Personal Information
@@ -155,16 +183,10 @@ export default function UserPage() {
                                 <DiscussionsTab threads={threads} loading={loadingThreads} />
                             )}
                             {activeTab === 'reading' && (
-                                <div className="text-center py-12">
-                                    <h3 className="text-2xl font-bold text-gray-800 mb-4">Reading Lists</h3>
-                                    <p className="text-lg text-gray-600">Coming soon...</p>
-                                </div>
+                                <ReadingListsTab lists={readingLists} loading={loadingLists} />
                             )}
                             {activeTab === 'personal' && (
-                                <div className="text-center py-12">
-                                    <h3 className="text-2xl font-bold text-gray-800 mb-4">Personal Information</h3>
-                                    <p className="text-lg text-gray-600">Coming soon...</p>
-                                </div>
+                                <PersonalInfoTab user={user} />
                             )}
                         </div>
                     </div>
@@ -229,8 +251,8 @@ function CommentNode({ comment, depth }: { comment: ThreadComment; depth: number
         <div style={{ marginLeft: `${marginLeft}px` }}>
             <div
                 className={`rounded-lg p-4 ${comment.isUserComment
-                        ? 'bg-blue-50 border-2 border-blue-300 shadow-md'
-                        : 'bg-gray-50/80 border border-gray-200'
+                    ? 'bg-blue-50 border-2 border-blue-300 shadow-md'
+                    : 'bg-gray-50/80 border border-gray-200'
                     }`}
             >
                 {/* Comment Header */}
@@ -278,3 +300,220 @@ function CommentNode({ comment, depth }: { comment: ThreadComment; depth: number
         </div>
     );
 }
+
+function ReadingListsTab({ lists, loading }: { lists: any[]; loading: boolean }) {
+    const [expandedLists, setExpandedLists] = useState<Set<number>>(new Set());
+    const [listPapers, setListPapers] = useState<Record<number, any[]>>({});
+    const [loadingPapers, setLoadingPapers] = useState<Set<number>>(new Set());
+
+    const toggleList = async (listId: number) => {
+        const newExpanded = new Set(expandedLists);
+
+        if (newExpanded.has(listId)) {
+            newExpanded.delete(listId);
+        } else {
+            newExpanded.add(listId);
+
+            // Load papers for this list if not already loaded
+            if (!listPapers[listId]) {
+                await loadListPapers(listId);
+            }
+        }
+
+        setExpandedLists(newExpanded);
+    };
+
+    const loadListPapers = async (listId: number) => {
+        setLoadingPapers(prev => new Set(prev).add(listId));
+
+        try {
+            const response = await fetchAPI(`/reading-list/${listId}/papers`);
+            setListPapers(prev => ({
+                ...prev,
+                [listId]: response.papers || []
+            }));
+        } catch (error) {
+            console.error(`Failed to load papers for list ${listId}:`, error);
+            setListPapers(prev => ({
+                ...prev,
+                [listId]: []
+            }));
+        } finally {
+            setLoadingPapers(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(listId);
+                return newSet;
+            });
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="text-center py-12">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+                <p className="text-gray-600">Loading your reading lists...</p>
+            </div>
+        );
+    }
+
+    if (lists.length === 0) {
+        return (
+            <div className="text-center py-12">
+                <svg className="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+                <h3 className="text-xl font-semibold text-gray-700 mb-2">No Reading Lists Yet</h3>
+                <p className="text-gray-600">Create reading lists to organize your papers.</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-4">
+            <h3 className="text-2xl font-bold text-gray-800 mb-6">Your Reading Lists ({lists.length})</h3>
+
+            {lists.map((list) => (
+                <div
+                    key={list.id}
+                    className="bg-white/60 backdrop-blur-sm rounded-xl border border-white/40 shadow-md hover:shadow-lg transition-all duration-300"
+                >
+                    {/* List Header */}
+                    <div
+                        onClick={() => toggleList(list.id)}
+                        className="p-6 cursor-pointer hover:bg-white/40 transition-colors rounded-xl"
+                    >
+                        <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                                <h4 className="text-xl font-bold text-gray-800 mb-2">{list.name}</h4>
+                                <p className="text-sm text-gray-600">
+                                    {list.paperid?.length || 0} paper{(list.paperid?.length || 0) !== 1 ? 's' : ''}
+                                    {' • '}
+                                    Created {new Date(list.created_at).toLocaleDateString()}
+                                </p>
+                            </div>
+                            <div className="ml-4">
+                                <svg
+                                    className={`w-6 h-6 text-gray-600 transition-transform duration-300 ${expandedLists.has(list.id) ? 'rotate-180' : ''
+                                        }`}
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Expanded Papers List */}
+                    {expandedLists.has(list.id) && (
+                        <div className="px-6 pb-6">
+                            <div className="border-t border-gray-200 pt-4">
+                                {loadingPapers.has(list.id) ? (
+                                    <div className="text-center py-8">
+                                        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                                        <p className="text-gray-600 mt-2">Loading papers...</p>
+                                    </div>
+                                ) : listPapers[list.id] && listPapers[list.id].length > 0 ? (
+                                    <div className="space-y-3">
+                                        {listPapers[list.id].map((paper) => (
+                                            <Link key={paper.id} href={`/paper/${paper.id}`}>
+                                                <div className="bg-white/80 rounded-lg p-4 hover:bg-white hover:shadow-md transition-all duration-200 border border-gray-200">
+                                                    <h5 className="font-semibold text-gray-800 hover:text-blue-600 mb-2">
+                                                        {paper.title}
+                                                    </h5>
+                                                    {paper.abstract && (
+                                                        <p className="text-sm text-gray-600 line-clamp-2">{paper.abstract}</p>
+                                                    )}
+                                                    {paper.categories && (
+                                                        <div className="flex flex-wrap gap-2 mt-2">
+                                                            {paper.categories.split(',').slice(0, 3).map((category: string, idx: number) => (
+                                                                <span
+                                                                    key={idx}
+                                                                    className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded"
+                                                                >
+                                                                    {category.trim()}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </Link>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-8 text-gray-500">
+                                        <p>No papers in this list yet.</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            ))}
+        </div>
+    );
+}
+
+function PersonalInfoTab({ user }: { user: any }) {
+    return (
+        <div className="max-w-2xl mx-auto">
+            <div className="bg-white/60 backdrop-blur-sm rounded-xl border border-white/40 shadow-md overflow-hidden">
+                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-6">
+                    <div className="flex items-center space-x-4">
+                        <div className="h-20 w-20 rounded-full bg-white flex items-center justify-center text-3xl font-bold text-blue-600 border-4 border-white/50 shadow-lg">
+                            {user.username ? user.username.charAt(0).toUpperCase() : 'U'}
+                        </div>
+                        <div className="text-white">
+                            <h3 className="text-2xl font-bold">{user.username}</h3>
+                            <p className="text-blue-100">Researcher / Student</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="p-8 space-y-6">
+                    <div className="grid grid-cols-1 gap-6">
+                        <div className="space-y-2">
+                            <label className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
+                                Account ID
+                            </label>
+                            <div className="flex items-center space-x-2 p-3 bg-white/50 rounded-lg border border-gray-200">
+                                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                                </svg>
+                                <span className="font-mono text-gray-700">
+                                    {user.id ? `${user.id.substring(0, 8)}...${user.id.substring(user.id.length - 4)}` : 'N/A'}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
+                                Full Name
+                            </label>
+                            <div className="flex items-center space-x-2 p-3 bg-white/50 rounded-lg border border-gray-200">
+                                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                                <span className="text-gray-700 text-lg">{user.username}</span>
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
+                                Email Address
+                            </label>
+                            <div className="flex items-center space-x-2 p-3 bg-white/50 rounded-lg border border-gray-200">
+                                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                </svg>
+                                <span className="text-gray-700 text-lg">{user.email || 'No email provided'}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
