@@ -1,6 +1,8 @@
 {
-  "/explore/page": "app/explore/page.js",
   "/home/page": "app/home/page.js",
-  "/user/page": "app/user/page.js",
-  "/article/[id]/page": "app/article/[id]/page.js"
+  "/page": "app/page.js",
+  "/login/page": "app/login/page.js",
+  "/explore/page": "app/explore/page.js",
+  "/article/[id]/page": "app/article/[id]/page.js",
+  "/user/page": "app/user/page.js"
 }
