@@ -114,6 +114,15 @@ export async function generateSummaryForPaper(paperId: string): Promise<{ succes
         const comments = await db.comments.findByArticleId(paperId);
         console.log(`Comments found: ${comments.length}`);
 
+        // Handle case with no comments
+        if (comments.length === 0) {
+            return {
+                success: true,
+                message: "No comments available to summarize.",
+                summary: "No community discussions available yet for this paper."
+            };
+        }
+
         // 3. Prepare Text
         let fullText = prepareWeightedCommentsText(comments, paper.abstract);
         console.log(`Prepared text length: ${fullText.length}`);
@@ -131,8 +140,17 @@ export async function generateSummaryForPaper(paperId: string): Promise<{ succes
             console.error('API KEY MISSING IN FUNCTION');
         }
 
-        const summary = await generateSummaryWithHuggingFace(fullText);
-        console.log('Summary generated successfully');
+        let summary: string;
+        try {
+            summary = await generateSummaryWithHuggingFace(fullText);
+            console.log('Summary generated successfully with Hugging Face');
+        } catch (apiError: any) {
+            console.error('Hugging Face API failed, falling back to mock summary:', apiError);
+            // Fallback to mock summary function
+            const { generateArticleSummary } = await import('./ai');
+            summary = await generateArticleSummary(paper.title, comments.map(c => c.content));
+            console.log('Mock summary generated as fallback');
+        }
 
         if (!summary) {
             return { success: false, message: "Summary generation returned empty result" };
