@@ -1,3 +1,11 @@
+/*!
+@fila: page.tsx
+@brief: Home page for JourNet client with search and results listing
+@author: ${author}
+/@email: ${email}
+/date: ${date}
+/copyright: Copyright (c) ${year} for benefit of ${collaboration}
+*/
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -19,6 +27,12 @@ interface Paper {
   comments_summary?: string;
 }
 
+/*!
+@brief Renders the home page with search functionality and results
+@param none
+@return JSX.Element
+@public
+*/
 export default function HomePage() {
   const { user, isLoading, logout } = useAuth();
   const router = useRouter();
@@ -204,7 +218,7 @@ export default function HomePage() {
                   <svg className="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <p className="text-xl text-gray-600">No papers found for "{searchQuery}"</p>
+                  <p className="text-xl text-gray-600">No papers found for &quot;{searchQuery}&quot;</p>
                   <p className="text-gray-500 mt-2">Try different keywords or search terms</p>
                 </div>
               )}
@@ -256,6 +270,12 @@ export default function HomePage() {
   );
 }
 
+/*!
+@brief Renders a single paper card for display in results grid
+@param paper - Paper data to render
+@return JSX.Element
+@private
+*/
 function PaperCard({ paper }: { paper: Paper }) {
   return (
     <Link href={`/article/${paper.id}`}>

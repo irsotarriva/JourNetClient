@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
@@ -30,11 +30,17 @@ export default function SearchPage() {
     }
   }, [user, authLoading, router]);
 
+  const loadRecommendations = useCallback(async () => {
+    if (!user) return;
+    const recs = await db.articles.getRecommendations(user.id, 6);
+    setRecommendations(recs);
+  }, [user]);
+
   useEffect(() => {
     if (user) {
       loadRecommendations();
     }
-  }, [user]);
+  }, [user, loadRecommendations]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -47,12 +53,6 @@ export default function SearchPage() {
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, [showRecommendations]);
-
-  const loadRecommendations = async () => {
-    if (!user) return;
-    const recs = await db.articles.getRecommendations(user.id, 6);
-    setRecommendations(recs);
-  };
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();

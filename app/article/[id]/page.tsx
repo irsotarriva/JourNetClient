@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth';
 import NetworkBackground from '@/components/NetworkBackground';
 import StarRating from '@/components/StarRating';
 import { fetchAPI } from '@/lib/api';
+import { useCallback } from 'react';
 
 interface Paper {
   id: number;
@@ -76,61 +77,8 @@ export default function ArticlePage() {
     }
   }, [user, authLoading, router]);
 
-  useEffect(() => {
-    if (user && articleId) {
-      loadArticleData();
-    }
-  }, [user, articleId]);
 
-  const loadArticleData = async () => {
-    if (!user || !articleId) return;
-    setLoading(true);
-
-    try {
-      // Fetch paper details
-      const paperData = await fetchAPI(`/papers/${articleId}`);
-      setPaper(paperData);
-
-      // Check if AI summary exists, if not generate one
-      if (!paperData.comments_summary && paperData.abstract) {
-        generateAISummary(paperData);
-      }
-
-      // Fetch comments for this article
-      try {
-        const commentsData = await fetchAPI(`/comments/article/${articleId}`);
-        setComments(commentsData.comments || []);
-      } catch (e) {
-        console.log('No comments found or error loading comments');
-        setComments([]);
-      }
-
-      // Fetch rating info
-      try {
-        const avgRating = await fetchAPI(`/ratings/paper/${articleId}/average`);
-        setRatingInfo(avgRating);
-      } catch (e) {
-        console.log('No ratings found');
-        setRatingInfo({ average_rating: 0, total_ratings: 0 });
-      }
-
-      // Fetch user's rating for this paper
-      try {
-        const myRating = await fetchAPI(`/ratings/paper/${articleId}/my-rating`);
-        setUserRating(myRating.rating || 0);
-        setExistingRatingId(myRating.id || null);
-      } catch (e) {
-        setUserRating(0);
-        setExistingRatingId(null);
-      }
-    } catch (error) {
-      console.error('Error loading article:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const generateAISummary = async (paperData: Paper) => {
+  const generateAISummary = useCallback(async (paperData: Paper) => {
     if (!articleId) return;
     setGeneratingAISummary(true);
     try {
@@ -146,7 +94,61 @@ export default function ArticlePage() {
     } finally {
       setGeneratingAISummary(false);
     }
-  };
+  }, [articleId]);
+
+  const loadArticleData = useCallback(async () => {
+    if (!user || !articleId) return;
+    setLoading(true);
+  
+    try {
+      // Fetch paper details
+      const paperData = await fetchAPI(`/papers/${articleId}`);
+      setPaper(paperData);
+  
+      // Check if AI summary exists, if not generate one
+      if (!paperData.comments_summary && paperData.abstract) {
+        await generateAISummary(paperData);
+      }
+  
+      // Fetch comments for this article
+      try {
+        const commentsData = await fetchAPI(`/comments/article/${articleId}`);
+        setComments(commentsData.comments || []);
+      } catch (e) {
+        console.log('No comments found or error loading comments');
+        setComments([]);
+      }
+  
+      // Fetch rating info
+      try {
+        const avgRating = await fetchAPI(`/ratings/paper/${articleId}/average`);
+        setRatingInfo(avgRating);
+      } catch (e) {
+        console.log('No ratings found');
+        setRatingInfo({ average_rating: 0, total_ratings: 0 });
+      }
+  
+      // Fetch user's rating for this paper
+      try {
+        const myRating = await fetchAPI(`/ratings/paper/${articleId}/my-rating`);
+        setUserRating(myRating.rating || 0);
+        setExistingRatingId(myRating.id || null);
+      } catch (e) {
+        setUserRating(0);
+        setExistingRatingId(null);
+      }
+    } catch (error) {
+      console.error('Error loading article:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [user, articleId, generateAISummary]);
+
+  useEffect(() => {
+    if (user && articleId) {
+      loadArticleData();
+    }
+  }, [user, articleId, loadArticleData]);
 
   const handleRate = async (rating: number) => {
     if (!user || !articleId || submittingRating) return;

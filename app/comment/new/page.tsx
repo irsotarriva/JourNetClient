@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, Suspense, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import Navbar from '@/components/Navbar';
@@ -29,13 +29,7 @@ function CommentForm() {
     }
   }, [user, authLoading, router]);
 
-  useEffect(() => {
-    if (articleId) {
-      loadArticleData();
-    }
-  }, [articleId]);
-
-  const loadArticleData = async () => {
+  const loadArticleData = useCallback(async () => {
     if (!articleId) return;
 
     const articleData = await db.articles.findById(articleId);
@@ -49,7 +43,13 @@ function CommentForm() {
         setParentComment(parentData);
       }
     }
-  };
+  }, [articleId, parentId]);
+
+  useEffect(() => {
+    if (articleId) {
+      loadArticleData();
+    }
+  }, [articleId, loadArticleData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -176,7 +176,7 @@ function CommentForm() {
                     <li>Constructive and meaningful contribution</li>
                     <li>Quality of discussion</li>
                   </ul>
-                  Labels like "meaningful", "critical", "helpful" will be assigned based on the analysis.
+                  Labels like &quot;meaningful&quot;, &quot;critical&quot;, &quot;helpful&quot; will be assigned based on the analysis.
                 </div>
               </div>
             </div>
