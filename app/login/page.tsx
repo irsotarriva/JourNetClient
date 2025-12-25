@@ -7,9 +7,9 @@ import NetworkBackground from '@/components/NetworkBackground';
 
 export default function LoginPage() {
     const [isLogin, setIsLogin] = useState(true);
-    const [email, setEmail] = useState('');
+    const [email, setEmail] = useState('demo@journet.com'); // Pre-fill demo email
     const [username, setUsername] = useState('');
-    const [password, setPassword] = useState('');
+    const [password, setPassword] = useState('demo'); // Pre-fill demo password
     const [confirmPassword, setConfirmPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -88,7 +88,11 @@ export default function LoginPage() {
                 {/* Login/Signup Toggle */}
                 <div className="flex mb-8 bg-white/40 backdrop-blur-md rounded-2xl p-2 shadow-lg border border-white/30">
                     <button
-                        onClick={() => setIsLogin(true)}
+                        onClick={() => {
+                            setIsLogin(true);
+                            setEmail('demo@journet.com'); // Reset to demo email
+                            setPassword('demo'); // Reset to demo password
+                        }}
                         className={`flex-1 py-3 rounded-xl font-semibold text-lg smooth-transition ${isLogin
                             ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
                             : 'text-gray-600 hover:text-gray-800 hover:bg-white/50'
@@ -97,7 +101,11 @@ export default function LoginPage() {
                         Login
                     </button>
                     <button
-                        onClick={() => setIsLogin(false)}
+                        onClick={() => {
+                            setIsLogin(false);
+                            setEmail('');
+                            setPassword('');
+                        }}
                         className={`flex-1 py-3 rounded-xl font-semibold text-lg smooth-transition ${!isLogin
                             ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
                             : 'text-gray-600 hover:text-gray-800 hover:bg-white/50'
@@ -184,6 +192,20 @@ export default function LoginPage() {
                                     </svg>
                                     <span>
                                         <strong>Important:</strong> This is a demo platform and may have security vulnerabilities. Do not use your real email or password. The email field is not verified.
+                                    </span>
+                                </span>
+                            </div>
+                        )}
+
+                        {/* Demo Account Message */}
+                        {isLogin && (
+                            <div className="bg-blue-50/90 backdrop-blur-sm border-2 border-blue-200 text-blue-700 px-4 py-3.5 rounded-xl text-sm animate-slide-down shadow-sm mb-4">
+                                <span className="flex items-center space-x-2">
+                                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                    </svg>
+                                    <span>
+                                        <strong>Demo Account:</strong> You can test the platform using <strong>demo@journet.com</strong> as the email and <strong>demo</strong> as the password.
                                     </span>
                                 </span>
                             </div>
